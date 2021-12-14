@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+ 
+	<title>Slime</title>
+
+  
+	
+	
+ 
+	<link rel="stylesheet" type="text/css" href='./src/css/Interface.css'></link>
+ 
+	
+	 
+ 
+
+   
+
+
+</div>
+ 
+
+
+
+<script id="fxhash-snippet">
+	//---- do not edit the following code (you can indent as you wish)
+	let alphabet = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"
+	var fxhash = "oo" + Array(49).fill(0).map(_=>alphabet[(Math.random()*alphabet.length)|0]).join('')
+	let b58dec = (str) => str.split('').reduce((p,c,i) => p + alphabet.indexOf(c) * (Math.pow(alphabet.length, str.length-i-1)), 0)
+	let fxhashTrunc = fxhash.slice(2)
+	let regex = new RegExp(".{" + ((fxhashTrunc.length/4)|0) + "}", 'g')
+	let hashes = fxhashTrunc.match(regex).map(h => b58dec(h))
+	let sfc32 = (a, b, c, d) => {
+		return () => {
+		a |= 0; b |= 0; c |= 0; d |= 0
+		var t = (a + b | 0) + d | 0
+		d = d + 1 | 0
+		a = b ^ b >>> 9
+		b = c + (c << 3) | 0
+		c = c << 21 | c >>> 11
+		c = c + t | 0
+		return (t >>> 0) / 4294967296
+	}
+}
+var fxrand = sfc32(...hashes)
+//---- /do not edit the following code
+</script>
+
+
+<script type="module" src="src/js/main.js" type="text/javascript"></script>
+
+</head>
+<body>
+	
+
+	 
+	<script id="diffuseDecayFragment" type="x-shader/x-fragment">
+				
+	
+		uniform sampler2D points;
+		uniform sampler2D input_texture;
+		uniform vec2 resolution;
+		uniform float decay;
+		varying vec2 vUv;
+		void main(){
+		
+			vec2 res = 1. / resolution;
+			vec3 pixelPoint = texture2D(points, vUv).rgb;
+			float pos = pixelPoint.r;
+			float pos2 = pixelPoint.g;
+			float pos3 = pixelPoint.b;
+			
+			
+			//accumulator
+			float col = 0.;
+			float col2 = 0.;
+			float col3 = 0.;
+			
+			//blur box size
+			const float dim = 3.;
+		
+			//weight
+			float weight = 1. / pow( 2. * dim + 1., 2. );
+		
+			for( float i = -dim; i <= dim; i++ ){
+			
+				for( float j = -dim; j <= dim; j++ ){
+			
+					vec3 val = texture2D( input_texture,  (gl_FragCoord.xy +vec2(i,j)) /resolution ).rgb;
+					col += val.r  * weight;
+					col2 += val.g * weight;
+					col3 += val.b * weight;
+		
+				}
+			}
+		
+		
+			//col +=pos;
+			//col2 += pos2; 
+			//col3 += pos3; 
+		
+			gl_FragColor =  vec4( max(0.,min(1.,col * decay + pos)), max(0.,min(1.,col2 * decay + pos2)), max(0.,min(1.,col3 * decay+ pos3)),1.);
+			
+		
+		}
+	</script>
+
+	 
+	
+		<script id="fragmentShaderPosition" type="x-shader/x-fragment">
+  
+			uniform vec2 resolution; 
+			
+			uniform float mouseRad;
+			uniform vec2 mousePos;
+			 
+			uniform bool isDisplacement;
+			uniform vec3 moveSpeed;
+			uniform vec3 rotationAngle;
+			uniform vec3 sensorDistance;
+			uniform vec3 sensorAngle; 
+			uniform vec3 infectious; 
+			
+			uniform vec3 attract0; 
+			uniform vec3 attract1; 
+			uniform vec3 attract2; 
+			
+			uniform vec2 textureDimensions;
+
+			uniform sampler2D diffuseTexture;
+			uniform sampler2D pointsTexture;
+
+			//the positions & directions as rg & b values
+			uniform sampler2D input_texture;
+
+			varying vec2 vUv;
+
+
+			const float PI  = 3.14159265358979323846264; 
+			const float PI2 = PI * 2.;
+
+
+			float sampleDiffuseTexture(vec2 pos, float team) {
+				float val = 0.;
+				const float searchArea = 1.;
+			 	vec2 uv = pos / resolution + 0.5;
+				for (float i = 0.;i<searchArea * 2. + 1.;i++) {
+					for (float j = 0.;j<searchArea * 2. + 1.;j++) {
+						vec4 pixel = texture2D(diffuseTexture,(uv + vec2(i - searchArea,j - searchArea) / resolution)).rgba;
+						vec3 attract = attract0;
+						if (team == 1.) {
+							attract = attract1;
+						} else if (team == 2. ) {
+							attract = attract2;
+						}
+						float pixelVal = pixel.r  * attract.r + pixel.g * attract.g + pixel.b * attract.b;
+						val += pixelVal * (1. / pow(2. * searchArea + 1.,2.));
+					}    
+				}
+				return val; 
+			}
+
+			float getDataValue(vec2 uv){
+				vec3 pixel = texture2D(pointsTexture,( uv / resolution  + 0.5) ).rgb;
+				return pixel.r + pixel.b + pixel.g;
+				
+			}
+			
+			float rand(vec2 co){
+				return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+			}
+
+			vec2 wrapPos(vec2 pos) {
+				return fract( (pos.xy + resolution * 0.5) /resolution ) * resolution - resolution * 0.5;
+			}
+
+			float round(float val) {
+				return floor(val + 0.5);
+			}
+
+			void main()	{
+ 
+				vec2 uv = gl_FragCoord.xy / textureDimensions;
+				vec4 tmpPos = texture2D( input_texture, gl_FragCoord.xy / textureDimensions );
+				
+				
+				vec2 position = tmpPos.xy ;
+				float direction = tmpPos.z;
+				float team = tmpPos.a;
+ 
+				 
+			
+				float angDif = sensorAngle[int(team)];
+				float leftAng = direction - angDif;
+				float rightAng = direction + angDif;
+
+				float sensorDist = sensorDistance[int(team)];
+				vec2 leftPos = 	position + vec2( cos(leftAng) , 	sin(leftAng	))  * sensorDist;
+				vec2 midPos =	position + vec2( cos(direction) , 	sin(direction)) * sensorDist;
+				vec2 rightPos = position + vec2( cos(rightAng) , 	sin(rightAng)) 	* sensorDist;
+ 
+				
+				float leftVal = sampleDiffuseTexture(leftPos.xy ,team);
+				float rightVal = sampleDiffuseTexture(rightPos.xy,team);
+				float midVal = sampleDiffuseTexture(midPos.xy,team);
+			 
+					
+				 
+ 
+
+				float rotationAng = rotationAngle[int(team)];
+
+				
+				
+					
+				//	if(midVal > rightVal && midVal > leftVal) {
+				//	} else if (midVal < rightVal && midVal < leftVal) {
+				//		direction += (0.5 - floor(rand(position) + 0.5)) * rotationAng;
+				//	} else if (rightVal > midVal && rightVal > leftVal) {
+				//		direction += rotationAng; 
+				//	} else if (leftVal > midVal && leftVal > rightVal) {
+				//		direction -= rotationAng; 
+				//	}
+				
+				//this is the above without if/else branching
+				float goStraight = sign(max(0., midVal - leftVal) * max(0.,midVal - rightVal));
+				float goRandom =   sign(max(0., rightVal - midVal) * max(0.,leftVal - midVal));
+				float goRight =    sign(max(0., rightVal - midVal) * max(0.,rightVal - leftVal));
+				float goLeft =     sign(max(0.,  leftVal - midVal) * max(0., leftVal - rightVal));
+
+				direction += (1. - goStraight) *  (
+					(0.5 - floor(rand(position) + 0.5)) * goRandom * rotationAng +
+						(rotationAng * goRight - rotationAng * goLeft) * (1. - goRandom)
+				);
+					
+				
+				
+				vec2 newPosition = position  + vec2(cos(direction),sin(direction)) * ( moveSpeed[int(team)] );
+
+
+
+				//stop if new field is already occupied
+				if( isDisplacement && getDataValue(newPosition.xy) > 0. ){
+					newPosition.xy = tmpPos.xy;
+					direction += PI2 / 2.;
+				}
+		   
+				//push particles away from mouse
+				vec2 seg = newPosition.xy - mousePos;
+				vec2 dir = normalize(seg);
+				float dist = length(seg);
+				if (dist< mouseRad) { 
+					newPosition.xy +=3. *  dir * (mouseRad -  dist) / (mouseRad /  5.); 
+				} 
+		   
+
+				if (newPosition.x < -resolution.x * 0.5 || newPosition.x > resolution.x * 0.5 || newPosition.y < -0.5 * resolution.y || newPosition.y > resolution.y* 0.5) {
+					newPosition.xy = tmpPos.xy;
+					direction += PI * sign(rand(position.xy)-0.5);
+				}
+				
+				//wrap coordinates on screen
+				newPosition.xy = wrapPos(newPosition.xy);
+			
+
+
+				vec4 newPixelColor =texture2D(diffuseTexture, tmpPos.xy / resolution + 0.5);
+				bool isBlue = newPixelColor.b > 0.5;
+				bool isRed = newPixelColor.r > 0.5;
+				bool isGreen = newPixelColor.g > 0.5;
+				//Blue infects red 
+				if (isBlue && team == 0. && infectious.b > 0.) {
+					team = 2.;
+				} else 
+				//red infects green
+				if (isRed && team == 1. && infectious.r > 0.) {
+					team = 0.;
+				} else 
+				//green infects blue
+				if (isGreen && team == 2. && infectious.g > 0.) {
+					team = 1.;
+				}
+				 
+			
+				gl_FragColor = vec4( newPosition.xy  , direction,  team );
+
+			}
+
+		</script>
+
+		
+
+		<script type="x-shader/x-vertex" id="passThroughVertex">
+			varying vec2 vUv; 
+			void main(){
+				vUv = uv; 
+				gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.);
+			} 
+		</script>
+
+		<script type="x-shader/x-vertex" id="passThroughVertex2">
+			varying vec2 vUv;
+			void main(){
+				vUv = uv ;
+				 gl_Position = projectionMatrix * modelViewMatrix * vec4(position.xy,1.,1.);
+				 
+			}
+
+		</script>
+		<script type="x-shader/x-vertex" id="renderDotsVertex">
+ 
+			uniform sampler2D positionTexture;
+			uniform vec3 dotSizes;
+			varying float team;
+			void main(){ 
+				vec4 uvsss = texture2D(positionTexture,uv ) ;
+				gl_Position=  projectionMatrix * modelViewMatrix * vec4(uvsss.xy,0.,1.);
+				team = uvsss.a;
+				gl_PointSize = dotSizes[int(team)];
+			}
+
+		</script>
+
+		<!-- bird geometry shader -->
+		<script type="x-shader/x-fragment" id="renderDotsFragment"> 
+			uniform sampler2D particleTexture;
+			uniform bool isParticleTexture;
+			varying float team;
+			void main(){
+				float d = 1.-length( .5 - gl_PointCoord.xy );
+				float r = 0.;
+				float g = 0.;
+				float b = 1.;
+				if (team == 0.) {
+					r = 1.;
+					g= 0.;
+					b = 0.;
+				} else if (team == 1. ) {
+					r = 0.;
+					g = 1.;
+					b = 0.;
+				}
+				vec2 coord = gl_PointCoord;
+				float sin_factor = sin(0.);
+				float cos_factor = cos(0.);
+				coord = vec2((coord.x - 0.5) , coord.y - 0.5) * mat2(cos_factor, sin_factor, -sin_factor, cos_factor);
+			
+				coord += 0.5;
+				if (isParticleTexture){
+					gl_FragColor =  vec4( r,g, b ,1.) * texture2D(particleTexture,gl_PointCoord);
+				} else {
+					gl_FragColor =  vec4( r,g, b ,1.) ;//* texture2D(particleTexture,gl_PointCoord);
+				}
+			}
+
+		</script>
+
+	
+	 
+		<script type="x-shader/x-fragment" id="finalRenderFragment">
+  
+
+		
+			uniform sampler2D diffuseTexture;
+			uniform sampler2D pointsTexture;
+			uniform float isMonochrome;
+			uniform float trailOpacity;
+			uniform float dotOpacity;
+			uniform vec2 resolution;
+			uniform vec4 dotColor;
+			uniform vec4 trailColor; 
+			varying vec2 vUv;
+			void main(){
+				vec2 uv = gl_FragCoord.xy / resolution.xy;
+				vec4 trail = texture2D(diffuseTexture, vUv);
+				vec4 points = texture2D(pointsTexture,vUv);
+
+			vec4 trailPixel = isMonochrome * vec4((trail.r + trail.g + trail.b + trail.a)/4.) + (1. - isMonochrome) * trail;
+			vec4 dotPixel = isMonochrome * vec4((points.r + points.g + points.b + points.a)/4.) + (1. - isMonochrome) * points; 
+
+				gl_FragColor = trailPixel * trailOpacity + dotOpacity * dotPixel;//vec4( dotVal * dotColor.xyz    / 255.,1.);
+
+			}
+		</script>
+	 
+
+	 
+</body>
+</html>
