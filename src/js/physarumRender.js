@@ -14,7 +14,7 @@ import { RENDER_DOTS_FRAGMENT } from "./Shaders/RenderDotsFragment.js"
 import { DIFFUSE_DECAY_FRAGMENT } from "./Shaders/DiffuseDecayFragment.js"
 import { FINAL_RENDER_FRAGMENT } from "./Shaders/FinalRenderFragment.js"
 
-var WIDTH = 512
+var WIDTH = 128
 
 var mouseDown = false
 var forShow = false
@@ -60,22 +60,30 @@ export class PhysarumRender {
 
 		this.mouseSpawnTexture = new MouseSpawnTexture(WIDTH, WIDTH)
 		if (!forShow) {
-			let mouseMoveEv = ev => {
+			this.renderer.domElement.addEventListener("mousemove", ev => {
+				ev.preventDefault()
 				this.mousePos = {
 					x: ev.clientX - this.width * 0.5,
 					y: this.height * 0.5 - ev.clientY
 				}
-			}
-			this.renderer.domElement.addEventListener("mousemove", mouseMoveEv)
-			this.renderer.domElement.addEventListener("touchmove", mouseMoveEv)
+			})
+			this.renderer.domElement.addEventListener("touchmove", ev => {
+				ev.preventDefault()
+				if (ev.touches) {
+					this.mousePos = {
+						x: ev.touches[0].clientX - this.width * 0.5,
+						y: this.height * 0.5 - ev.touches[0].clientY
+					}
+				}
+			})
 			this.renderer.domElement.addEventListener(
 				"mousedown",
 				ev => (mouseDown = true)
 			)
-			this.renderer.domElement.addEventListener(
-				"touchstart",
-				ev => (mouseDown = true)
-			)
+			this.renderer.domElement.addEventListener("touchstart", ev => {
+				ev.preventDefault()
+				mouseDown = true
+			})
 			document.addEventListener("mouseup touchend", ev => (mouseDown = false))
 		}
 	}
@@ -89,7 +97,7 @@ export class PhysarumRender {
 		let rotationAngle2 = rndFloat(0.1, 0.3)
 		this.settings = {
 			mouseRad: 100,
-			mousePlaceAmount: 1000,
+			mousePlaceAmount: 200,
 			mousePlaceRadius: 50,
 			mousePlaceColor: 0,
 

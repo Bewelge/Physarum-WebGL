@@ -10,6 +10,7 @@ body {
 	flex-direction: row;
 	flex-wrap: wrap;
 	background-color: black;
+	overflow: hidden;
 }
 canvas {
 	margin: 0;
