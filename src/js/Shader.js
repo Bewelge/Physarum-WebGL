@@ -1,4 +1,5 @@
 import * as THREE from "../lib/three.module.js"
+import { orthographicCamera } from "./ThreeJsUtils.js"
 export class Shader {
 	constructor(width, height, vertex, fragment, uniforms, attributes, options) {
 		this.width = width
@@ -65,14 +66,7 @@ export class Shader {
 	}
 	getCamera() {
 		if (!this.camera) {
-			this.camera = new THREE.OrthographicCamera(
-				-this.width / 2,
-				this.width / 2,
-				this.height / 2,
-				-this.height / 2,
-				0.1,
-				100
-			)
+			this.camera = orthographicCamera(this.width, this.height)
 			this.camera.position.z = 1
 		}
 		return this.camera
