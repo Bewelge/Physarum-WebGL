@@ -63,10 +63,6 @@ export class PingPongShader {
 		})
 		this.material.transparent = true
 
-		// let bufferGeometry = new THREE.BufferGeometry()
-		// for (let key in attributes) {
-		// 	bufferGeometry.addAttribute(key, attributes[key])
-		// }
 		this.mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(), this.material)
 		this.mesh.scale.set(width, height, 1)
 

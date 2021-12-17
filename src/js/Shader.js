@@ -29,7 +29,7 @@ export class Shader {
 
 		let bufferGeometry = new THREE.BufferGeometry()
 		for (let key in attributes) {
-			bufferGeometry.addAttribute(key, attributes[key])
+			bufferGeometry.setAttribute(key, attributes[key])
 		}
 		this.mesh = new THREE.Points(bufferGeometry, this.material)
 
