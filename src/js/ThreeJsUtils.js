@@ -10,5 +10,5 @@ export const Vector = arr => {
 		: console.error("Cant create vector with " + arr.length + " elements")
 }
 
-export const orthographicCamer = (w, h) =>
+export const orthographicCamera = (w, h) =>
 	new THREE.OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, 0.1, 100)
