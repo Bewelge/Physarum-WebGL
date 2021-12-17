@@ -65,9 +65,7 @@ export const UPDATE_DOTS_FRAGMENT = `
         return fract( (pos.xy + resolution * 0.5) /resolution ) * resolution - resolution * 0.5;
     }
 
-    float round(float val) {
-        return floor(val + 0.5);
-    }
+     
 
     void main()	{
 
