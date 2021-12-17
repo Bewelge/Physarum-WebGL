@@ -28,6 +28,13 @@ export class PhysarumRender {
 		this.textureLoader = new THREE.TextureLoader()
 
 		this.initScene()
+		if (!this.renderer.capabilities.isWebGL2) {
+			InfoDialog.create(
+				"This page requires WebGL2. Your browser does not currently support it. You can check <a href='https://caniuse.com/webgl2'>https://caniuse.com/webgl2</a> to see which browsers are supported.",
+				() => {}
+			)
+			return
+		}
 
 		this.initMouse()
 
@@ -76,15 +83,25 @@ export class PhysarumRender {
 					}
 				}
 			})
-			this.renderer.domElement.addEventListener(
-				"mousedown",
-				ev => (mouseDown = true)
-			)
-			this.renderer.domElement.addEventListener("touchstart", ev => {
-				ev.preventDefault()
+			this.renderer.domElement.addEventListener("mousedown", ev => {
+				this.mousePos = {
+					x: ev.clientX - this.width * 0.5,
+					y: this.height * 0.5 - ev.clientY
+				}
 				mouseDown = true
 			})
-			document.addEventListener("mouseup touchend", ev => (mouseDown = false))
+			this.renderer.domElement.addEventListener("touchstart", ev => {
+				ev.preventDefault()
+				if (ev.touches) {
+					this.mousePos = {
+						x: ev.touches[0].clientX - this.width * 0.5,
+						y: this.height * 0.5 - ev.touches[0].clientY
+					}
+				}
+				mouseDown = true
+			})
+			document.addEventListener("mouseup", ev => (mouseDown = false))
+			document.addEventListener("touchend", ev => (mouseDown = false))
 		}
 	}
 
@@ -398,6 +415,7 @@ export class PhysarumRender {
 
 		let gui = new GUI()
 		this.gui = gui
+		gui.close()
 		this.particleAmount = WIDTH * WIDTH
 
 		let amountFolder = this.gui.addFolder("Particle amount")
@@ -412,6 +430,7 @@ export class PhysarumRender {
 				)
 				.name(amnt)
 		}
+		amountFolder.close()
 
 		let placing = {
 			Red: true,
@@ -421,6 +440,7 @@ export class PhysarumRender {
 		}
 
 		let controls = gui.addFolder("Controls")
+		controls.close()
 		controls
 			.add(
 				this.settings,
@@ -447,6 +467,7 @@ export class PhysarumRender {
 			.name("Click spawn amount")
 
 		let placingColors = controls.addFolder("Place color")
+		placingColors.close()
 		for (let key in placing) {
 			placingColors.add(placing, key).onChange(() => {
 				for (let key2 in placing) {
@@ -472,6 +493,7 @@ export class PhysarumRender {
 			})
 
 		let renderingFolder = gui.addFolder("Rendering")
+		renderingFolder.close()
 		renderingFolder
 			.add(this.finalMat.uniforms.isMonochrome, "value", 0, 1, 1)
 			.name("Monochrome")
@@ -488,6 +510,7 @@ export class PhysarumRender {
 		this.guiGroups = []
 		for (let i = 0; i < 3; i++) {
 			let group = gui.addFolder(teamNames[i])
+			group.close()
 			this.guiGroups.push(group)
 
 			group
