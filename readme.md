@@ -13,10 +13,7 @@ Click to spawn more particles. Move mouse to push particles around.
 The simulation is implemented in Javascript & WebGL using Three.js. </br></br>
 Many thanks to
 
-[https://github.com/nicoptere/physarum](https://github.com/nicoptere/physarum) - Helped me a lot to figure out how to implement this.
-
-[Github Repository](https://github.com/Bewelge/Physarum-WebGL)
-`
+[https://github.com/nicoptere/physarum](https://github.com/nicoptere/physarum) - Helped me a lot to figure out how to implement this.`
 
 Build with
 
