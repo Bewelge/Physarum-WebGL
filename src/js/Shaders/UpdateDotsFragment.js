@@ -65,6 +65,16 @@ export const UPDATE_DOTS_FRAGMENT = `
         return fract( (pos.xy + resolution * 0.5) /resolution ) * resolution - resolution * 0.5;
     }
 
+    //attempt to get it working in webgl1. No errors using this but still doesn't work.
+    //float getTeamValue(float team,vec3 data) {
+    //    if (team == 0.) {
+    //        return data.x;
+    //    } else if (team == 1.) {
+    //        return data.y;
+    //    } else if (team == 2.) {
+    //        return data.z;
+    //    }
+    //}
      
 
     void main()	{
@@ -80,15 +90,14 @@ export const UPDATE_DOTS_FRAGMENT = `
         
         vec2 position = tmpPos.xy ;
         float direction = tmpPos.z;
-        float team = tmpPos.a;
-
-            
+        float team = tmpPos.a;  
+        int teamInt = int(team);
     
-        float angDif = sensorAngle[int(team)];
+        float angDif = sensorAngle[teamInt];
         float leftAng = direction - angDif;
         float rightAng = direction + angDif;
 
-        float sensorDist = sensorDistance[int(team)];
+        float sensorDist = sensorDistance[teamInt];
         vec2 leftPos = 	position + vec2( cos(leftAng) , 	sin(leftAng	))  * sensorDist;
         vec2 midPos =	position + vec2( cos(direction) , 	sin(direction)) * sensorDist;
         vec2 rightPos = position + vec2( cos(rightAng) , 	sin(rightAng)) 	* sensorDist;
@@ -102,7 +111,7 @@ export const UPDATE_DOTS_FRAGMENT = `
             
 
 
-        float rotationAng = rotationAngle[int(team)];
+        float rotationAng = rotationAngle[teamInt];
 
         
         
@@ -129,7 +138,7 @@ export const UPDATE_DOTS_FRAGMENT = `
             
         
         
-        vec2 newPosition = position  + vec2(cos(direction),sin(direction)) * ( moveSpeed[int(team)] );
+        vec2 newPosition = position  + vec2(cos(direction),sin(direction)) *  moveSpeed[teamInt];
 
 
 
