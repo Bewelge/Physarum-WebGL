@@ -77,4 +77,14 @@ export class Shader {
 		}
 		return this.camera
 	}
+	dispose() {
+		this.getScene().remove(this.mesh)
+		this.mesh.geometry.dispose()
+		this.mesh = null
+		this.camera = null
+		this.material.dispose()
+		this.renderTarget.texture.dispose()
+		this.renderTarget = null
+		this.scene = null
+	}
 }

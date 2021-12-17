@@ -20,7 +20,8 @@ export class PingPongShader {
 			type: THREE.FloatType,
 			alpha: true,
 			blending: THREE.NoBlending,
-			depthText: false
+			depthText: false,
+			preserveDrawingBuffer: true
 		}
 		for (let key in options) {
 			opts[key] = options[key]
@@ -70,7 +71,6 @@ export class PingPongShader {
 		this.mesh.scale.set(width, height, 1)
 
 		this.getScene().add(this.mesh)
-		console.log(this)
 	}
 	setUniform(key, value) {
 		if (!this.material.uniforms.hasOwnProperty(key)) {
@@ -95,6 +95,7 @@ export class PingPongShader {
 				? this.renderTarget1
 				: this.renderTarget0
 	}
+
 	render(renderer, updatedUniforms) {
 		this.switchRenderTargets()
 
@@ -108,6 +109,7 @@ export class PingPongShader {
 		renderer.setSize(this.width, this.height)
 		renderer.setRenderTarget(this.nextRenderTarget)
 		renderer.render(this.getScene(), this.getCamera())
+
 		renderer.setRenderTarget(null)
 		this.mesh.visible = false
 	}
@@ -129,6 +131,21 @@ export class PingPongShader {
 			)
 			this.camera.position.z = 1
 		}
+
 		return this.camera
+	}
+	dispose() {
+		this.getScene().remove(this.mesh)
+		this.mesh.geometry.dispose()
+		this.mesh = null
+		this.camera = null
+		this.material.dispose()
+		this.currentRenderTarget.texture.dispose()
+		this.nextRenderTarget.texture.dispose()
+		this.renderTarget0 = null
+		this.renderTarget1 = null
+		this.currentRenderTarget = null
+		this.nextRenderTarget = null
+		this.scene = null
 	}
 }
