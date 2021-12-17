@@ -60,17 +60,23 @@ export class PhysarumRender {
 
 		this.mouseSpawnTexture = new MouseSpawnTexture(WIDTH, WIDTH)
 		if (!forShow) {
-			this.renderer.domElement.addEventListener("mousemove", ev => {
+			let mouseMoveEv = ev => {
 				this.mousePos = {
 					x: ev.clientX - this.width * 0.5,
 					y: this.height * 0.5 - ev.clientY
 				}
-			})
+			}
+			this.renderer.domElement.addEventListener("mousemove", mouseMoveEv)
+			this.renderer.domElement.addEventListener("touchmove", mouseMoveEv)
 			this.renderer.domElement.addEventListener(
 				"mousedown",
 				ev => (mouseDown = true)
 			)
-			document.addEventListener("mouseup", ev => (mouseDown = false))
+			this.renderer.domElement.addEventListener(
+				"touchstart",
+				ev => (mouseDown = true)
+			)
+			document.addEventListener("mouseup touchend", ev => (mouseDown = false))
 		}
 	}
 
@@ -82,7 +88,7 @@ export class PhysarumRender {
 		let rotationAngle1 = rndFloat(0.1, 0.3)
 		let rotationAngle2 = rndFloat(0.1, 0.3)
 		this.settings = {
-			mouseRad: 250,
+			mouseRad: 100,
 			mousePlaceAmount: 1000,
 			mousePlaceRadius: 50,
 			mousePlaceColor: 0,
