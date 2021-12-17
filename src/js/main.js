@@ -9,7 +9,6 @@ window.onload = () => {
 	stats.showPanel(0)
 	document.body.appendChild(stats.dom)
 	threeJsHandler.init()
-	console.log(stats)
 	render()
 }
 function render() {
