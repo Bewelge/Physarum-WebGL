@@ -1,3 +1,6 @@
+/**
+ * Adapted from https://github.com/nicoptere/physarum/blob/master/src/glsl/diffuse_decay_fs.glsl
+ */
 export const DIFFUSE_DECAY_FRAGMENT = `
 uniform sampler2D points;
 		uniform sampler2D input_texture;

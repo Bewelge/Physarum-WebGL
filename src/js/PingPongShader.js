@@ -1,5 +1,8 @@
 import * as THREE from "../lib/three.module.js"
 import { orthographicCamera } from "./ThreeJsUtils.js"
+/**
+ * Adapted from https://github.com/nicoptere/physarum/blob/master/src/PingpongRenderTarget.js
+ */
 export class PingPongShader {
 	constructor(
 		width,

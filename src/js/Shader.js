@@ -1,5 +1,8 @@
 import * as THREE from "../lib/three.module.js"
 import { orthographicCamera } from "./ThreeJsUtils.js"
+/**
+ * Adapted from https://github.com/nicoptere/physarum/blob/master/src/RenderTarget.js
+ */
 export class Shader {
 	constructor(width, height, vertex, fragment, uniforms, attributes, options) {
 		this.width = width
