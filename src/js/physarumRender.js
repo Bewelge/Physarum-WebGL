@@ -21,6 +21,7 @@ var forShow = false
 export class PhysarumRender {
 	constructor(renderDimensions) {
 		this.dims = renderDimensions
+		this.time = 0
 	}
 	init() {
 		this.width = forShow ? 800 : window.innerWidth
@@ -139,6 +140,7 @@ export class PhysarumRender {
 				Math.max(0.2, rndFloat(1, 1.5) * rotationAngle1),
 				Math.max(0.2, rndFloat(1, 1.5) * rotationAngle2)
 			],
+			colors: ["rgb(255,250,60)", "rgb(115,255,250)", "rgb(255,115,255)"],
 			infectious: [rndInt(0, 1), rndInt(0, 1), rndInt(0, 1)],
 			dotSizes: [1, 1, 1], //rndFloat(1, 2), rndFloat(1, 2), rndFloat(1, 2)],
 			attract0: [rndFloat(0.1, 1), rndFloat(-1, 0), rndFloat(-1, 0)],
@@ -180,6 +182,15 @@ export class PhysarumRender {
 				},
 				pointsTexture: {
 					value: null
+				},
+				col0: {
+					value: new THREE.Color(this.settings.colors[0])
+				},
+				col1: {
+					value: new THREE.Color(this.settings.colors[1])
+				},
+				col2: {
+					value: new THREE.Color(this.settings.colors[2])
 				},
 				dotOpacity: { value: this.settings.dotOpacity },
 				trailOpacity: { value: this.settings.trailOpacity },
@@ -269,6 +280,7 @@ export class PhysarumRender {
 				.withUniform("diffuseTexture", null)
 				.withUniform("pointsTexture", null)
 				.withUniform("mouseSpawnTexture", null)
+				.withUniform("time", 0)
 				.withUniform("resolution", Vector([this.width, this.height]))
 				.withUniform("textureDimensions", Vector([WIDTH, WIDTH]))
 				.withUniform("mouseRad", this.settings.mouseRad)
@@ -306,6 +318,7 @@ export class PhysarumRender {
 	}
 
 	render() {
+		this.time++
 		if (mouseDown) {
 			this.mouseSpawnTexture.drawMouse(
 				this.mousePos,
@@ -320,6 +333,7 @@ export class PhysarumRender {
 			)
 		}
 
+		this.getUpdateDotsShader().setUniform("time", this.time)
 		this.diffuseShader.setUniform("points", this.renderDotsShader.getTexture())
 		this.diffuseShader.render(this.renderer)
 
@@ -437,7 +451,7 @@ export class PhysarumRender {
 				}
 				placing[key] = true
 				this.settings.mousePlaceColor =
-					key == "Red" ? 0 : key == "Green" ? 1 : key == "Blue" ? 2 : -1
+					key == "Slime0" ? 0 : key == "Slime1" ? 1 : key == "Slime2" ? 2 : -1
 				placingColors.controllers.forEach(contr => contr.updateDisplay())
 			})
 		}
@@ -468,13 +482,19 @@ export class PhysarumRender {
 			.add(this.finalMat.uniforms.trailOpacity, "value", 0, 1, 0.01)
 			.name("Trails opacity")
 
-		let teamNames = ["Red Slime", "Green Slime", "Blue Slime"]
+		let teamNames = ["Slime0", "Slime1", "Slime2"]
 		this.guiGroups = []
 		for (let i = 0; i < 3; i++) {
 			let group = gui.addFolder(teamNames[i])
 			group.close()
 			this.guiGroups.push(group)
 
+			group
+				.addColor(this.settings.colors, i)
+				.name("Color")
+				.onChange(
+					t => (this.finalMat.uniforms["col" + i].value = new THREE.Color(t))
+				)
 			group
 				.add(this.settings.sensorAngle, i, 0.01, 2, 0.01)
 				.name("Sensor Angle")
@@ -610,7 +630,7 @@ export class PhysarumRender {
 		}
 
 		this.guiGroups[teamIndex].controllers.forEach(contr => {
-			contr._onChange ? contr._onChange() : null
+			contr._onChange && contr._name != "Color" ? contr._onChange() : null
 			contr.updateDisplay()
 		})
 	}

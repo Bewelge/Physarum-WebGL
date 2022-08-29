@@ -2,6 +2,7 @@ export const UPDATE_DOTS_FRAGMENT = `
     uniform vec2 resolution; 
 			
     uniform float mouseRad;
+    uniform float time;
     uniform vec2 mousePos;
         
     uniform bool isDisplacement;
@@ -116,25 +117,25 @@ export const UPDATE_DOTS_FRAGMENT = `
         
         
             
-        //	if(midVal > rightVal && midVal > leftVal) {
-        //	} else if (midVal < rightVal && midVal < leftVal) {
-        //		direction += (0.5 - floor(rand(position + gl_FragCoord.xy) + 0.5)) * rotationAng;
-        //	} else if (rightVal > midVal && rightVal > leftVal) {
-        //		direction += rotationAng; 
-        //	} else if (leftVal > midVal && leftVal > rightVal) {
-        //		direction -= rotationAng; 
-        //	}
+        	if(midVal > rightVal && midVal > leftVal) {
+        	} else if (midVal < rightVal && midVal < leftVal) {
+        		direction += (0.5 - floor(rand(position + gl_FragCoord.xy) + 0.5)) * rotationAng;
+        	} else if (rightVal > midVal && rightVal > leftVal) {
+        		direction += rotationAng; 
+        	} else if (leftVal > midVal && leftVal > rightVal) {
+        		direction -= rotationAng; 
+        	}
         
         //this is the above without if/else branching (on further inspection: It's not.)
-        float goStraight = sign(max(0., midVal - leftVal) * max(0.,midVal - rightVal));
-        float goRandom =   sign(max(0., rightVal - midVal) * max(0.,leftVal - midVal));
-        float goRight =    sign(max(0., rightVal - midVal) * max(0.,rightVal - leftVal));
-        float goLeft =     sign(max(0.,  leftVal - midVal) * max(0., leftVal - rightVal));
+        // float goStraight = sign(max(0., midVal - leftVal) * max(0.,midVal - rightVal));
+        // float goRandom =   sign(max(0., rightVal - midVal) * max(0.,leftVal - midVal));
+        // float goRight =    sign(max(0., rightVal - midVal) * max(0.,rightVal - leftVal));
+        // float goLeft =     sign(max(0.,  leftVal - midVal) * max(0., leftVal - rightVal));
 
-        direction += (1. - goStraight) *  (
-            (0.5 - floor(rand(position) + 0.5)) * goRandom * rotationAng +
-                (rotationAng * goRight - rotationAng * goLeft) * (1. - goRandom)
-        );
+        // direction += (1. - goStraight) *  (
+        //     (0.5 - floor(rand(position) + 0.5)) * goRandom * rotationAng +
+        //         (rotationAng * goRight - rotationAng * goLeft) * (1. - goRandom)
+        // );
             
         
         
