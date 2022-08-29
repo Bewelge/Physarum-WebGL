@@ -239,7 +239,7 @@ export class PhysarumRender {
 			//y
 			positionsAndDirections[id++] = y + rndDis * Math.sin(rndAng)
 			//direction
-			positionsAndDirections[id++] = rndAng // ((rnd % (1 / 3)) / (1 / 3)) * Math.PI * 2 // rndFloat(0, Math.PI * 2)
+			positionsAndDirections[id++] = rndAng
 
 			//team (0-> red, 1-> green, 2-> blue)
 			positionsAndDirections[id] =
@@ -306,44 +306,6 @@ export class PhysarumRender {
 	}
 
 	render() {
-		// if (!this.ticker) {
-		// 	this.ticker = 0
-		// 	this.toSpawn = 3
-		// 	this.tickDur = 5
-		// 	this.spawned = 0
-		// }
-		// this.ticker++
-		// if (
-		// 	this.ticker % this.tickDur == 0 &&
-		// 	this.ticker > 100 &&
-		// 	this.spawned < WIDTH * WIDTH
-		// ) {
-		// 	// this.tickDur = Math.max(1, this.tickDur - 1)
-		// 	// this.updateDotsShader.setUniform(
-		// 	// 	"mouseRad",
-		// 	// 	500 - (500 * this.spawned) / (WIDTH * WIDTH)
-		// 	// )
-		// 	this.mouseSpawnTexture.drawMouse(
-		// 		{
-		// 			x:
-		// 				Math.cos(this.ticker / 20) *
-		// 				Math.pow(100 - (100 * this.spawned) / (WIDTH * WIDTH), 1),
-		// 			y:
-		// 				Math.sin(this.ticker / 20) *
-		// 				Math.pow(100 - (100 * this.spawned) / (WIDTH * WIDTH), 1)
-		// 		},
-		// 		1,
-		// 		(5 * this.ticker) / this.tickDur,
-		// 		Math.floor(Math.abs(this.toSpawn))
-		// 	)
-
-		// 	this.updateDotsShader.setUniform(
-		// 		"mouseSpawnTexture",
-		// 		this.mouseSpawnTexture.getTexture()
-		// 	)
-		// 	this.toSpawn = (this.toSpawn - 0.025) % 3
-		// 	this.spawned += (5 * this.ticker) / this.tickDur
-		// }
 		if (mouseDown) {
 			this.mouseSpawnTexture.drawMouse(
 				this.mousePos,

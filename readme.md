@@ -22,6 +22,8 @@ Many thanks to
 
 [https://github.com/nicoptere/physarum](https://github.com/nicoptere/physarum) - Helped me a lot to figure out how to implement this.`
 
+Particle sprites are from Kenney.nl
+
 Build with
 
 ```

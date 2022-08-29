@@ -1,8 +1,8 @@
 function rndFloat(min, max) {
-	return min + (max - min) * fxrand()
+	return min + (max - min) * Math.random()
 }
 function rndInt(min, max) {
-	return Math.round(min + (max - min) * fxrand())
+	return Math.round(min + (max - min) * Math.random())
 }
 
 function isSafari() {

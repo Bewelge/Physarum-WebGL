@@ -1,5 +1,5 @@
 import RenderDimensions from "./js/RenderDimensions.js"
-import { PhysarumRender, ThreeJsHandler } from "./js/physarumRender.js"
+import { PhysarumRender } from "./js/physarumRender.js"
 
 var renderDimensions = new RenderDimensions()
 var threeJsHandler = new PhysarumRender(renderDimensions)

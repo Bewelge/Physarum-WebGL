@@ -125,7 +125,7 @@ export const UPDATE_DOTS_FRAGMENT = `
         //		direction -= rotationAng; 
         //	}
         
-        //this is the above without if/else branching
+        //this is the above without if/else branching (on further inspection: It's not.)
         float goStraight = sign(max(0., midVal - leftVal) * max(0.,midVal - rightVal));
         float goRandom =   sign(max(0., rightVal - midVal) * max(0.,leftVal - midVal));
         float goRight =    sign(max(0., rightVal - midVal) * max(0.,rightVal - leftVal));
