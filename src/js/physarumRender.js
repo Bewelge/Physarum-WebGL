@@ -13,8 +13,13 @@ import { RENDER_DOTS_VERTEX } from "./Shaders/RenderDotsVertex.js"
 import { RENDER_DOTS_FRAGMENT } from "./Shaders/RenderDotsFragment.js"
 import { DIFFUSE_DECAY_FRAGMENT } from "./Shaders/DiffuseDecayFragment.js"
 import { FINAL_RENDER_FRAGMENT } from "./Shaders/FinalRenderFragment.js"
+import { EffectComposer } from "../lib/postprocessing/EffectComposer.js"
+import { RenderPass } from "../lib/postprocessing/RenderPass.js"
+import { ShaderPass } from "../lib/postprocessing/ShaderPass.js"
+import { SobelOperatorShader } from "../lib/shaders/SobelOperatorShader.js"
+import { BloomPass } from "../lib/postprocessing/BloomPass.js"
 
-var WIDTH = 128
+var WIDTH = 512
 
 var mouseDown = false
 var forShow = false
@@ -43,12 +48,26 @@ export class PhysarumRender {
 
 		this.initShaders()
 
+		this.initComposer()
+
 		if (!forShow) {
 			this.initGUI()
 		}
 
 		document.body.appendChild(this.renderer.domElement)
 	}
+	initComposer() {
+		this.composer = new EffectComposer(this.renderer)
+		const renderPass = new RenderPass(this.scene, this.camera)
+		this.composer.addPass(renderPass)
+
+		this.sobelPass = new ShaderPass(SobelOperatorShader)
+		this.sobelPass.uniforms["resolution"].value.x = this.width
+		this.sobelPass.uniforms["resolution"].value.y = this.height
+		this.sobelPass.enabled = this.settings.isSobelFilter
+		this.composer.addPass(this.sobelPass)
+	}
+
 	initScene() {
 		this.scene = new THREE.Scene()
 
@@ -107,9 +126,9 @@ export class PhysarumRender {
 	}
 
 	initSettings() {
-		let moveSpeed0 = rndFloat(1, 5)
-		let moveSpeed1 = rndFloat(1, 5)
-		let moveSpeed2 = rndFloat(1, 5)
+		let moveSpeed0 = rndFloat(1, 5.5)
+		let moveSpeed1 = rndFloat(1, 5.5)
+		let moveSpeed2 = rndFloat(1, 5.5)
 		let rotationAngle0 = rndFloat(0.1, 0.3)
 		let rotationAngle1 = rndFloat(0.1, 0.3)
 		let rotationAngle2 = rndFloat(0.1, 0.3)
@@ -119,15 +138,22 @@ export class PhysarumRender {
 			mousePlaceRadius: 50,
 			mousePlaceColor: 0,
 
-			isMonochrome: rndFloat(0, 1) < 0.1 ? true : false,
-			dotOpacity: 0,
+			isSobelFilter: false,
+			isMonochrome: true,
+			dotOpacity: 1,
 			trailOpacity: 1,
 
 			isParticleTexture: false,
-			particleTexture: "None",
-			decay: rndFloat(0.9, 0.99),
-			isDisplacement: false,
+			particleTexture: "circle_02",
+			decay: 0.77,
+			isDisplacement: true,
+			isRestrictToMiddle: false,
 
+			randChance: [
+				rndFloat(0.05, 0.085),
+				rndFloat(0.05, 0.085),
+				rndFloat(0.05, 0.085)
+			],
 			moveSpeed: [moveSpeed0, moveSpeed1, moveSpeed2],
 			sensorDistance: [
 				6 + rndFloat(1.5, 3) * moveSpeed0,
@@ -141,8 +167,8 @@ export class PhysarumRender {
 				Math.max(0.2, rndFloat(1, 1.5) * rotationAngle2)
 			],
 			colors: ["rgb(255,250,60)", "rgb(115,255,250)", "rgb(255,115,255)"],
-			infectious: [rndInt(0, 1), rndInt(0, 1), rndInt(0, 1)],
-			dotSizes: [1, 1, 1], //rndFloat(1, 2), rndFloat(1, 2), rndFloat(1, 2)],
+			infectious: [0, 0, 0],
+			dotSizes: [1, 1, 1],
 			attract0: [rndFloat(0.1, 1), rndFloat(-1, 0), rndFloat(-1, 0)],
 			attract1: [rndFloat(-1, 0), rndFloat(0.1, 1), rndFloat(-1, 0)],
 			attract2: [rndFloat(-1, 0), rndFloat(-1, 0), rndFloat(0.1, 1)]
@@ -162,19 +188,24 @@ export class PhysarumRender {
 			.withUniform("resolution", new THREE.Vector2(this.width, this.height))
 			.create()
 
-		this.getUpdateDotsShader(arrays.positionsAndDirections)
 		this.getRenderDotsShader(arrays.pos, arrays.uvs)
 
 		if (this.settings.particleTexture != "None") {
 			this.textureLoader.load(
-				"../src/images/particles/" + this.settings.particleTexture + ".png",
+				"src/images/particles/" + this.settings.particleTexture + ".png",
 				tex => {
+					this.getRenderDotsShader().setUniform(
+						"isParticleTexture",
+						this.settings.particleTexture != "None"
+					)
 					console.log("loaded" + this.settings.particleTexture)
 					this.renderDotsShader.setUniform("particleTexture", tex)
 				}
 			)
 		}
-
+		this.initFinalMat()
+	}
+	initFinalMat() {
 		this.finalMat = new THREE.ShaderMaterial({
 			uniforms: {
 				diffuseTexture: {
@@ -192,6 +223,8 @@ export class PhysarumRender {
 				col2: {
 					value: new THREE.Color(this.settings.colors[2])
 				},
+				isFlatShading: { value: false },
+				colorThreshold: { value: 0.5 },
 				dotOpacity: { value: this.settings.dotOpacity },
 				trailOpacity: { value: this.settings.trailOpacity },
 				isMonochrome: { value: this.settings.isMonochrome }
@@ -211,52 +244,81 @@ export class PhysarumRender {
 
 		this.scene.add(this.finalMesh)
 	}
+
 	getDataArrays(dotAmount) {
 		let pos = new Float32Array(dotAmount * 3)
 		let uvs = new Float32Array(dotAmount * 2)
 		let positionsAndDirections = new Float32Array(dotAmount * 4)
-		let teamAmount = rndInt(3, 3)
+		let teamAmount = rndInt(1, 3)
 		for (let i = 0; i < dotAmount; i++) {
 			pos[i * 3] = pos[i * 3 + 1] = pos[i * 3 + 2] = 0
 
 			uvs[i * 2] = (i % WIDTH) / WIDTH
 			uvs[i * 2 + 1] = ~~(i / WIDTH) / WIDTH
-
+		}
+		this.resetPositions()
+		return { pos, uvs }
+	}
+	resetPositions() {
+		let teamAmount = rndInt(3, 3)
+		let dotAmount = WIDTH * WIDTH
+		let positionsAndDirections = new Float32Array(dotAmount * 4)
+		let rndSetup = rndInt(0, 1)
+		let p0 = { x: rndInt(0, this.width), y: rndInt(0, this.height) }
+		let p1 = { x: rndInt(0, this.width), y: rndInt(0, this.height) }
+		let p2 = { x: rndInt(0, this.width), y: rndInt(0, this.height) }
+		for (let i = 0; i < dotAmount; i++) {
 			let id = i * 4
 			let rnd = i / dotAmount
 			let x = 0
 			let y = 0
 			let startInd = 0
-			if (rnd < 1 / 3) {
-				x = (2.5 / 5) * this.width
-				y = (2 / 5) * this.height
-			} else if (rnd < 2 / 3) {
-				x = (2 / 5) * this.width
-				y = (3 / 5) * this.height
-				startInd = Math.floor((dotAmount * 1) / 3)
-			} else {
-				x = (3 / 5) * this.width
-				y = (3 / 5) * this.height
-				startInd = Math.floor((dotAmount * 2) / 3)
-			}
-			y -= this.height * 0.5
-			x -= this.width * 0.5
-
 			let rndAng = rndFloat(0, Math.PI * 2)
-			let radius = rndInt(0, 1)
-			let rndDis = rndFloat(0, radius)
-			//x
-			positionsAndDirections[id++] = x + rndDis * Math.cos(rndAng)
-			//y
-			positionsAndDirections[id++] = y + rndDis * Math.sin(rndAng)
-			//direction
-			positionsAndDirections[id++] = rndAng
 
-			//team (0-> red, 1-> green, 2-> blue)
-			positionsAndDirections[id] =
-				(rnd < 2 / 3 ? (rnd < 1 / 3 ? 0 : 1) : 2) % teamAmount
+			if (rndSetup == 0) {
+				if (rnd < 1 / 3) {
+					x = p0.x
+					y = p0.y
+				} else if (rnd < 2 / 3) {
+					x = p1.x
+					y = p1.y
+					startInd = Math.floor((dotAmount * 1) / 3)
+				} else {
+					x = p2.x
+					y = p2.y
+					startInd = Math.floor((dotAmount * 2) / 3)
+				}
+				y -= this.height * 0.5
+				x -= this.width * 0.5
+
+				let radius = rndInt(0, 500)
+				let rndDis = rndFloat(100, 300)
+				x += rndDis * Math.cos(rndAng)
+				y += rndDis * Math.sin(rndAng)
+				//x
+				positionsAndDirections[id++] = x + rndDis * Math.cos(rndAng)
+				//y
+				positionsAndDirections[id++] = y + rndDis * Math.sin(rndAng)
+				//direction
+				positionsAndDirections[id++] = rndAng
+
+				//team (0-> red, 1-> green, 2-> blue)
+				positionsAndDirections[id] = rndInt(0, 2)
+			} else {
+				positionsAndDirections[id++] = ((i % WIDTH) * this.width) / WIDTH
+				//y
+				positionsAndDirections[id++] =
+					(Math.floor(i / WIDTH) * this.height) / WIDTH
+				//direction
+				positionsAndDirections[id++] = rndAng
+
+				//team (0-> red, 1-> green, 2-> blue)
+				positionsAndDirections[id] = rndInt(0, 2)
+			}
 		}
-		return { pos, uvs, positionsAndDirections }
+		this.getUpdateDotsShader().dispose()
+		this.updateDotsShader = null
+		this.getUpdateDotsShader(positionsAndDirections)
 	}
 	changeParticleAmount(newAmount) {
 		WIDTH = Math.sqrt(newAmount)
@@ -280,6 +342,7 @@ export class PhysarumRender {
 				.withUniform("diffuseTexture", null)
 				.withUniform("pointsTexture", null)
 				.withUniform("mouseSpawnTexture", null)
+				.withUniform("isRestrictToMiddle", this.settings.isRestrictToMiddle)
 				.withUniform("time", 0)
 				.withUniform("resolution", Vector([this.width, this.height]))
 				.withUniform("textureDimensions", Vector([WIDTH, WIDTH]))
@@ -289,6 +352,7 @@ export class PhysarumRender {
 				.withUniform("sensorAngle", Vector(this.settings.sensorAngle))
 				.withUniform("rotationAngle", Vector(this.settings.rotationAngle))
 				.withUniform("sensorDistance", Vector(this.settings.sensorDistance))
+				.withUniform("randChance", Vector(this.settings.randChance))
 				.withUniform("attract0", Vector(this.settings.attract0))
 				.withUniform("attract1", Vector(this.settings.attract1))
 				.withUniform("attract2", Vector(this.settings.attract2))
@@ -367,13 +431,13 @@ export class PhysarumRender {
 		this.renderer.setSize(this.width, this.height)
 		this.renderer.clear()
 
-		this.renderer.render(this.scene, this.camera)
-
 		this.mouseSpawnTexture.clear()
 		this.updateDotsShader.setUniform(
 			"mouseSpawnTexture",
 			this.mouseSpawnTexture.getTexture()
 		)
+
+		this.composer.render()
 	}
 	initGUI() {
 		let infoButton = document.createElement("div")
@@ -409,9 +473,9 @@ export class PhysarumRender {
 		amountFolder.close()
 
 		let placing = {
-			Red: true,
-			Green: false,
-			Blue: false,
+			Slime0: true,
+			Slime1: false,
+			Slime2: false,
 			Random: false
 		}
 
@@ -467,12 +531,31 @@ export class PhysarumRender {
 					this.settings.isDisplacement
 				)
 			})
+		gui
+			.add(this.settings, "isRestrictToMiddle")
+			.name("Restrict to middle")
+			.onChange(() => {
+				this.getUpdateDotsShader().setUniform(
+					"isRestrictToMiddle",
+					this.settings.isRestrictToMiddle
+				)
+			})
 
 		let renderingFolder = gui.addFolder("Rendering")
 		renderingFolder.close()
 		renderingFolder
+			.add(this.settings, "isSobelFilter")
+			.name("Sobel filter")
+			.onChange(t => (this.sobelPass.enabled = t))
+		renderingFolder
 			.add(this.finalMat.uniforms.isMonochrome, "value", 0, 1, 1)
 			.name("Monochrome")
+		renderingFolder
+			.add(this.finalMat.uniforms.isFlatShading, "value")
+			.name("Flat shading")
+		renderingFolder
+			.add(this.finalMat.uniforms.colorThreshold, "value", 0, 1, 0.0001)
+			.name("Color threshold")
 
 		renderingFolder
 			.add(this.finalMat.uniforms.dotOpacity, "value", 0, 1, 0.01)
@@ -494,6 +577,15 @@ export class PhysarumRender {
 				.name("Color")
 				.onChange(
 					t => (this.finalMat.uniforms["col" + i].value = new THREE.Color(t))
+				)
+			group
+				.add(this.settings.randChance, i, 0.0, 1, 0.01)
+				.name("Random turn chance")
+				.onChange(() =>
+					this.getUpdateDotsShader().setUniform(
+						"randChance",
+						Vector(this.settings.randChance)
+					)
 				)
 			group
 				.add(this.settings.sensorAngle, i, 0.01, 2, 0.01)
@@ -582,6 +674,12 @@ export class PhysarumRender {
 			.name("Randomize All Settings")
 		gui
 			.add(
+				{ resetPositions: this.resetPositions.bind(this, -1) },
+				"resetPositions"
+			)
+			.name("Reset Positions")
+		gui
+			.add(
 				this.settings,
 				"particleTexture",
 				"None,circle_01,circle_02,circle_03,circle_04,circle_05,dirt_01,dirt_02,dirt_03,fire_01,fire_02,flame_01,flame_02,flame_03,flame_04,flame_05,flame_06,flare_01,light_01,light_02,light_03,magic_01,magic_02,magic_03,magic_04,magic_05,muzzle_01,muzzle_02,muzzle_03,muzzle_04,muzzle_05,scorch_01,scorch_02,scorch_03,scratch_01,slash_01,slash_02,slash_03,slash_04,smoke_01,smoke_02,smoke_03,smoke_04,smoke_05,smoke_06,smoke_07,smoke_08,smoke_09,smoke_10,spark_01,spark_02,spark_03,spark_04,spark_05,spark_06,spark_07,star_01,star_02,star_03,star_04,star_05,star_06,star_07,star_08,star_09,symbol_01,symbol_02,trace_01,trace_02,trace_03,trace_04,trace_05,trace_06,trace_07,twirl_01,twirl_02,twirl_03,window_01,window_02,window_03,window_04".split(
@@ -596,7 +694,7 @@ export class PhysarumRender {
 				)
 				if (this.settings.particleTexture != "None") {
 					this.textureLoader.load(
-						"../src/images/particles/" + this.settings.particleTexture + ".png",
+						"src/images/particles/" + this.settings.particleTexture + ".png",
 						tex => this.getRenderDotsShader().setUniform("particleTexture", tex)
 					)
 				}
@@ -609,17 +707,18 @@ export class PhysarumRender {
 			this.randomizeSettings(2)
 			return
 		}
-		this.settings.moveSpeed[teamIndex] = rndFloat(1, 5)
+		this.settings.randChance[teamIndex] = rndFloat(0.05, 0.085)
+		this.settings.moveSpeed[teamIndex] = rndFloat(1, 5.5)
 		this.settings.sensorDistance[teamIndex] = Math.min(
 			50,
-			rndFloat(1.5, 6) * this.settings.moveSpeed[teamIndex]
+			rndFloat(1.5, 15) * this.settings.moveSpeed[teamIndex]
 		)
 		this.settings.rotationAngle[teamIndex] = rndFloat(0.3, 1)
 		this.settings.sensorAngle[teamIndex] = Math.min(
 			1,
 			rndFloat(1, 1.5) * this.settings.rotationAngle[teamIndex]
 		)
-		this.settings.infectious[teamIndex] = rndInt(0, 1)
+		this.settings.infectious[teamIndex] = 0 //rndInt(0, 1)
 		this.settings.dotSizes[teamIndex] = rndFloat(1, 1)
 
 		for (let i = 0; i < 3; i++) {
