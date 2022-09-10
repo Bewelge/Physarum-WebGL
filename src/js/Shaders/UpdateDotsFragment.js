@@ -5,8 +5,10 @@ export const UPDATE_DOTS_FRAGMENT = `
     uniform float time;
     uniform vec2 mousePos;
         
+    uniform bool isRestrictToMiddle;
     uniform bool isDisplacement;
     uniform vec3 moveSpeed;
+    uniform vec3 randChance;
     uniform vec3 rotationAngle;
     uniform vec3 sensorDistance;
     uniform vec3 sensorAngle; 
@@ -94,7 +96,10 @@ export const UPDATE_DOTS_FRAGMENT = `
         float team = tmpPos.a;  
         int teamInt = int(team);
     
-        float angDif = sensorAngle[teamInt];
+        bool isPulsing = mod(time + 11. * (1. + team),80.) <40.;
+        float pulse = 1. - (abs(mod(time,80.) ) / 40. - .5)/0.5;
+        float offset =  isPulsing ? 1. + pulse * .3 : 1.;
+        float angDif = sensorAngle[teamInt]  ;
         float leftAng = direction - angDif;
         float rightAng = direction + angDif;
 
@@ -113,38 +118,29 @@ export const UPDATE_DOTS_FRAGMENT = `
 
 
         float rotationAng = rotationAngle[teamInt];
-
+ 
+        if (rand(position)<randChance[teamInt]  ) {
+        direction += rotationAng * sign(rand(gl_FragCoord.xy+position)-0.5) ; 
+        } else if (rightVal > midVal && rightVal > leftVal) {
+        		direction += rotationAng ; 
+        } else if (leftVal > midVal && leftVal > rightVal) {
+            direction -= rotationAng ; 
+        }
         
-        
+       
             
-        	if(midVal > rightVal && midVal > leftVal) {
-        	} else if (midVal < rightVal && midVal < leftVal) {
-        		direction += (0.5 - floor(rand(position + gl_FragCoord.xy) + 0.5)) * rotationAng;
-        	} else if (rightVal > midVal && rightVal > leftVal) {
-        		direction += rotationAng; 
-        	} else if (leftVal > midVal && leftVal > rightVal) {
-        		direction -= rotationAng; 
-        	}
+        if (isRestrictToMiddle && length( position  ) >  155.  * (1. + abs(mod(time * 0.01, 10.)-5.)/5. ) ) {
+            direction = atan(position.y, position.x) - PI * 1.;
+        }
         
-        //this is the above without if/else branching (on further inspection: It's not.)
-        // float goStraight = sign(max(0., midVal - leftVal) * max(0.,midVal - rightVal));
-        // float goRandom =   sign(max(0., rightVal - midVal) * max(0.,leftVal - midVal));
-        // float goRight =    sign(max(0., rightVal - midVal) * max(0.,rightVal - leftVal));
-        // float goLeft =     sign(max(0.,  leftVal - midVal) * max(0., leftVal - rightVal));
-
-        // direction += (1. - goStraight) *  (
-        //     (0.5 - floor(rand(position) + 0.5)) * goRandom * rotationAng +
-        //         (rotationAng * goRight - rotationAng * goLeft) * (1. - goRandom)
-        // );
-            
-        
-        
-        vec2 newPosition = position  + vec2(cos(direction),sin(direction)) *  moveSpeed[teamInt];
+        vec2 newPosition = position  + vec2(cos(direction),sin(direction)) *  moveSpeed[teamInt] ;
 
 
 
         //stop if new field is already occupied
-        if( isDisplacement && getDataValue(newPosition.xy) > 0. ){
+        if( 
+            // !isPulsing && 
+            isDisplacement && getDataValue(newPosition.xy) > 0. ){
             newPosition.xy = tmpPos.xy;
             direction += PI2 / 2.;
         }
@@ -159,7 +155,7 @@ export const UPDATE_DOTS_FRAGMENT = `
     
 
         //if (newPosition.x < -resolution.x * 0.5 || newPosition.x > resolution.x * 0.5 || newPosition.y < -0.5 * resolution.y || newPosition.y > resolution.y* 0.5) {
-        //if (length(newPosition) > 250. ) {
+        //if (length(newPosition) > 250.  ) {
         //	newPosition.xy = tmpPos.xy;
         //	direction += PI * sign(rand(position.xy)-0.5);
         //}

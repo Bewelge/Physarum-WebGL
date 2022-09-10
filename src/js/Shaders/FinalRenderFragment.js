@@ -4,6 +4,8 @@ uniform sampler2D diffuseTexture;
 			uniform float isMonochrome;
 			uniform float trailOpacity;
 			uniform float dotOpacity;
+			uniform bool isFlatShading;
+			uniform float colorThreshold;
 			uniform vec2 resolution;
 			uniform vec4 dotColor;
 			uniform vec4 trailColor; 
@@ -16,13 +18,39 @@ uniform sampler2D diffuseTexture;
 				vec4 trail = texture2D(diffuseTexture, vUv);
 				vec4 points = texture2D(pointsTexture,vUv);
 
-			vec4 trailPixel = isMonochrome * vec4((trail.r + trail.g + trail.b + trail.a)/4.) + (1. - isMonochrome) * trail;
-			vec4 dotPixel = isMonochrome * vec4((points.r + points.g + points.b + points.a)/4.) + (1. - isMonochrome) * points; 
-			vec4 mixedCol = trailPixel * trailOpacity + dotOpacity * dotPixel;
+			vec4 trailPixel = isMonochrome * vec4(vec3((trail.r + trail.g   + trail.b )),trail.a) + (1. - isMonochrome) * trail;
+			vec4 dotPixel = isMonochrome * vec4(vec3((points.r + points.g  + points.b)),points.a) + (1. - isMonochrome) * points; 
+			vec4 mixedCol =  trailPixel  * trailOpacity + dotOpacity * dotPixel;
 			vec3 customCol = (mixedCol.r * col0 + mixedCol.g * col1 + mixedCol.b * col2);
+			if (isFlatShading) {
 
-				gl_FragColor = vec4(customCol,mixedCol.a);
-				// trailPixel * trailOpacity + dotOpacity * dotPixel;//vec4( dotVal * dotColor.xyz    / 255.,1.);
+				if (mixedCol.r > colorThreshold && mixedCol.r > mixedCol.b && mixedCol.r > mixedCol.g) {
+					customCol =  col0;
+				} else if (mixedCol.g > colorThreshold &&  mixedCol.g > mixedCol.b && mixedCol.g > mixedCol.r) {
+					customCol = col1;
+				} else if (mixedCol.b > colorThreshold && mixedCol.b > mixedCol.g && mixedCol.b > mixedCol.r) { 
+					customCol = col2;
+				}
+			} 
+
+				// if (trailPixel.rgb == vec3(0.)) {
+				// 	gl_FragColor = vec4(1.);
+				// } else {
+					
+					
+				// if (false) {
+					
+				// 	float alpha = 1.;// (customCol.r + customCol.g  + customCol.b ) / 3.;
+				// gl_FragColor = 
+				// 		mix(
+				// 		isMonochrome * (vec4(1.) - vec4(customCol,1.)) +
+				// 		(1. - isMonochrome) * vec4(customCol,1.),
+				// 		vec4(1.),0.5);
+				// } else {
+				gl_FragColor = vec4(customCol,1.);
+				// }
+				
+				
 
 			}
             `

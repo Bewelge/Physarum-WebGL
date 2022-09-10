@@ -17,30 +17,27 @@ uniform sampler2D points;
 			
 			
 			//accumulator
-			float col = 0.;
-			float col2 = 0.;
-			float col3 = 0.;
+			vec3 col = vec3(0.);
+			 
 			
 			//blur box size
-			const float dim = 1.;
+			const float dim = 5.;
 		
 			//weight
-			float weight = 1. / pow( 2. * dim + 1., 2. );
+			float weight = 1. / pow( 2. * dim + 1., 2. ) ;
 		
 			for( float i = -dim; i <= dim; i++ ){
 			
 				for( float j = -dim; j <= dim; j++ ){
 			
 					vec3 val = texture2D( input_texture,  (gl_FragCoord.xy +vec2(i,j)) /resolution ).rgb;
-					col += val.r  * weight;
-					col2 += val.g * weight;
-					col3 += val.b * weight;
+					col += val*weight;
 		
 				}
 			}
 		
 		
-			gl_FragColor =  vec4( max(0.,min(1.,col * decay + pos)), max(0.,min(1.,col2 * decay + pos2)), max(0.,min(1.,col3 * decay+ pos3)),1.);
+			gl_FragColor =  vec4( max(0.,min(1.,col.r * decay + pos)), max(0.,min(1.,col.g * decay + pos2)), max(0.,min(1.,col.b * decay+ pos3)),1.);
 			
 		
 		}`
