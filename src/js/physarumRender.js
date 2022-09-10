@@ -155,15 +155,15 @@ export class PhysarumRender {
 			],
 			moveSpeed: [moveSpeed0, moveSpeed1, moveSpeed2],
 			sensorDistance: [
-				6 + rndFloat(1.5, 3) * moveSpeed0,
-				6 + rndFloat(1.5, 3) * moveSpeed1,
-				6 + rndFloat(1.5, 3) * moveSpeed2
+				Math.min(50, rndFloat(1.5, 3) * moveSpeed0),
+				Math.min(50, rndFloat(1.5, 3) * moveSpeed1),
+				Math.min(50, rndFloat(1.5, 3) * moveSpeed2)
 			],
 			rotationAngle: [rotationAngle0, rotationAngle1, rotationAngle2],
 			sensorAngle: [
-				Math.max(0.2, rndFloat(1, 1.5) * rotationAngle0),
-				Math.max(0.2, rndFloat(1, 1.5) * rotationAngle1),
-				Math.max(0.2, rndFloat(1, 1.5) * rotationAngle2)
+				Math.max(1, rndFloat(1, 1.5) * rotationAngle0),
+				Math.max(1, rndFloat(1, 1.5) * rotationAngle1),
+				Math.max(1, rndFloat(1, 1.5) * rotationAngle2)
 			],
 			colors: ["rgb(255,250,60)", "rgb(115,255,250)", "rgb(255,115,255)"],
 			infectious: [0, 0, 0],
@@ -263,9 +263,20 @@ export class PhysarumRender {
 		let dotAmount = WIDTH * WIDTH
 		let positionsAndDirections = new Float32Array(dotAmount * 4)
 		let rndSetup = rndInt(0, 1)
-		let p0 = { x: rndInt(0, this.width), y: rndInt(0, this.height) }
-		let p1 = { x: rndInt(0, this.width), y: rndInt(0, this.height) }
-		let p2 = { x: rndInt(0, this.width), y: rndInt(0, this.height) }
+		let marg = Math.min(this.width, this.height) * 0.2
+		let p0 = {
+			x: rndInt(marg, this.width - marg),
+			y: rndInt(marg, this.height - marg)
+		}
+		let p1 = {
+			x: rndInt(marg, this.width - marg),
+			y: rndInt(marg, this.height - marg)
+		}
+		let p2 = {
+			x: rndInt(marg, this.width - marg),
+			y: rndInt(marg, this.height - marg)
+		}
+
 		for (let i = 0; i < dotAmount; i++) {
 			let id = i * 4
 			let rnd = i / dotAmount
@@ -275,23 +286,27 @@ export class PhysarumRender {
 			let rndAng = rndFloat(0, Math.PI * 2)
 
 			if (rndSetup == 0) {
+				let team = 0
 				if (rnd < 1 / 3) {
 					x = p0.x
 					y = p0.y
+					team = Math.floor(rnd * 3 * 3)
 				} else if (rnd < 2 / 3) {
 					x = p1.x
 					y = p1.y
+					team = Math.floor((rnd - 1 / 3) * 3 * 3)
 					startInd = Math.floor((dotAmount * 1) / 3)
 				} else {
 					x = p2.x
 					y = p2.y
+					team = Math.floor((rnd - 2 / 3) * 3 * 3)
 					startInd = Math.floor((dotAmount * 2) / 3)
 				}
 				y -= this.height * 0.5
 				x -= this.width * 0.5
 
 				let radius = rndInt(0, 500)
-				let rndDis = rndFloat(100, 300)
+				let rndDis = rndFloat(10, 50) * team
 				x += rndDis * Math.cos(rndAng)
 				y += rndDis * Math.sin(rndAng)
 				//x
@@ -302,7 +317,7 @@ export class PhysarumRender {
 				positionsAndDirections[id++] = rndAng
 
 				//team (0-> red, 1-> green, 2-> blue)
-				positionsAndDirections[id] = rndInt(0, 2)
+				positionsAndDirections[id] = team
 			} else {
 				positionsAndDirections[id++] = ((i % WIDTH) * this.width) / WIDTH
 				//y
