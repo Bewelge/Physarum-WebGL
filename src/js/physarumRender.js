@@ -17,7 +17,6 @@ import { EffectComposer } from "../lib/postprocessing/EffectComposer.js"
 import { RenderPass } from "../lib/postprocessing/RenderPass.js"
 import { ShaderPass } from "../lib/postprocessing/ShaderPass.js"
 import { SobelOperatorShader } from "../lib/shaders/SobelOperatorShader.js"
-import { BloomPass } from "../lib/postprocessing/BloomPass.js"
 
 var WIDTH = 512
 
