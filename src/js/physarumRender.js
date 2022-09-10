@@ -18,7 +18,7 @@ import { RenderPass } from "../lib/postprocessing/RenderPass.js"
 import { ShaderPass } from "../lib/postprocessing/ShaderPass.js"
 import { SobelOperatorShader } from "../lib/shaders/SobelOperatorShader.js"
 
-var WIDTH = 512
+var WIDTH = 256
 
 var mouseDown = false
 var forShow = false
@@ -144,7 +144,7 @@ export class PhysarumRender {
 
 			isParticleTexture: false,
 			particleTexture: "circle_02",
-			decay: 0.77,
+			decay: 0.93,
 			isDisplacement: true,
 			isRestrictToMiddle: false,
 
