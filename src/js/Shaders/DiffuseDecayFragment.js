@@ -21,7 +21,7 @@ uniform sampler2D points;
 			 
 			
 			//blur box size
-			const float dim = 5.;
+			const float dim = 1.;
 		
 			//weight
 			float weight = 1. / pow( 2. * dim + 1., 2. ) ;
