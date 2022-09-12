@@ -119,12 +119,21 @@ export const UPDATE_DOTS_FRAGMENT = `
 
         float rotationAng = rotationAngle[teamInt];
  
-        if (rand(position)<randChance[teamInt]  ) {
-        direction += rotationAng * sign(rand(gl_FragCoord.xy+position)-0.5) ; 
+        // if (rand(position)<randChance[teamInt]  ) {
+        // direction += rotationAng * sign(rand(gl_FragCoord.xy+position)-0.5) ; 
+        // } else if (rightVal > midVal && rightVal > leftVal) {
+        // 		direction += rotationAng ; 
+        // } else if (leftVal > midVal && leftVal > rightVal) {
+        //     direction -= rotationAng ; 
+        // }
+
+        if(midVal > rightVal && midVal > leftVal) {
+        } else if (midVal < rightVal && midVal < leftVal) {
+            direction += (0.5 - floor(rand(position + gl_FragCoord.xy) + 0.5)) * rotationAng;
         } else if (rightVal > midVal && rightVal > leftVal) {
-        		direction += rotationAng ; 
+            direction += rotationAng; 
         } else if (leftVal > midVal && leftVal > rightVal) {
-            direction -= rotationAng ; 
+            direction -= rotationAng; 
         }
         
        

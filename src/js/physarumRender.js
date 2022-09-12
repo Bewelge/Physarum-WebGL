@@ -593,15 +593,15 @@ export class PhysarumRender {
 				.onChange(
 					t => (this.finalMat.uniforms["col" + i].value = new THREE.Color(t))
 				)
-			group
-				.add(this.settings.randChance, i, 0.0, 1, 0.01)
-				.name("Random turn chance")
-				.onChange(() =>
-					this.getUpdateDotsShader().setUniform(
-						"randChance",
-						Vector(this.settings.randChance)
-					)
-				)
+			// group
+			// 	.add(this.settings.randChance, i, 0.0, 1, 0.01)
+			// 	.name("Random turn chance")
+			// 	.onChange(() =>
+			// 		this.getUpdateDotsShader().setUniform(
+			// 			"randChance",
+			// 			Vector(this.settings.randChance)
+			// 		)
+			// 	)
 			group
 				.add(this.settings.sensorAngle, i, 0.01, 2, 0.01)
 				.name("Sensor Angle")
