@@ -125,9 +125,9 @@ export class PhysarumRender {
 	}
 
 	initSettings() {
-		let moveSpeed0 = rndFloat(1, 5.5)
-		let moveSpeed1 = rndFloat(1, 5.5)
-		let moveSpeed2 = rndFloat(1, 5.5)
+		let moveSpeed0 = rndFloat(1, 2.5)
+		let moveSpeed1 = rndFloat(1, 2.5)
+		let moveSpeed2 = rndFloat(1, 2.5)
 		let rotationAngle0 = rndFloat(0.1, 0.3)
 		let rotationAngle1 = rndFloat(0.1, 0.3)
 		let rotationAngle2 = rndFloat(0.1, 0.3)
@@ -139,12 +139,12 @@ export class PhysarumRender {
 
 			isSobelFilter: false,
 			isMonochrome: true,
-			dotOpacity: 1,
+			dotOpacity: 0,
 			trailOpacity: 1,
 
 			isParticleTexture: false,
-			particleTexture: "circle_02",
-			decay: 0.93,
+			particleTexture: "None",
+			decay: 0.97,
 			isDisplacement: true,
 			isRestrictToMiddle: false,
 
@@ -165,13 +165,14 @@ export class PhysarumRender {
 				Math.max(1, rndFloat(1, 1.5) * rotationAngle1),
 				Math.max(1, rndFloat(1, 1.5) * rotationAngle2)
 			],
-			colors: ["rgb(255,250,60)", "rgb(115,255,250)", "rgb(255,115,255)"],
-			infectious: [0, 0, 0],
+			colors: ["rgb(255,250,60)", "rgb(255,0,0)", "rgb(92,255,111)"],
+			infectious: [rndInt(0, 1), rndInt(0, 1), rndInt(0, 1)],
 			dotSizes: [1, 1, 1],
 			attract0: [rndFloat(0.1, 1), rndFloat(-1, 0), rndFloat(-1, 0)],
 			attract1: [rndFloat(-1, 0), rndFloat(0.1, 1), rndFloat(-1, 0)],
 			attract2: [rndFloat(-1, 0), rndFloat(-1, 0), rndFloat(0.1, 1)]
 		}
+		this.randomizeSettings(-1)
 	}
 	initShaders() {
 		let dotAmount = WIDTH * WIDTH
@@ -722,13 +723,13 @@ export class PhysarumRender {
 			return
 		}
 		this.settings.randChance[teamIndex] = rndFloat(0.05, 0.085)
-		this.settings.moveSpeed[teamIndex] = rndFloat(1, 5.5)
+		this.settings.moveSpeed[teamIndex] = rndFloat(1, 5)
 		this.settings.sensorDistance[teamIndex] = Math.min(
 			50,
-			rndFloat(1.5, 15) * this.settings.moveSpeed[teamIndex]
+			rndFloat(1.5, 6) * this.settings.moveSpeed[teamIndex]
 		)
 		this.settings.rotationAngle[teamIndex] = rndFloat(0.3, 1)
-		this.settings.sensorAngle[teamIndex] = Math.min(
+		this.settings.sensorAngle[teamIndex] = Math.max(
 			1,
 			rndFloat(1, 1.5) * this.settings.rotationAngle[teamIndex]
 		)
@@ -742,9 +743,11 @@ export class PhysarumRender {
 			)
 		}
 
-		this.guiGroups[teamIndex].controllers.forEach(contr => {
-			contr._onChange && contr._name != "Color" ? contr._onChange() : null
-			contr.updateDisplay()
-		})
+		if (this.guiGroups) {
+			this.guiGroups[teamIndex].controllers.forEach(contr => {
+				contr._onChange && contr._name != "Color" ? contr._onChange() : null
+				contr.updateDisplay()
+			})
+		}
 	}
 }
